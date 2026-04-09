@@ -19,7 +19,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "top.yogiczy.mytv"
+        applicationId = "cn.nasyes.mytv"
         minSdk = 21
         targetSdk = 34
         versionCode = 1
