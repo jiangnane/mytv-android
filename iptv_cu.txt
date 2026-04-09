@@ -165,7 +165,7 @@ http://112.86.202.37:8112/JSBC_iptv/C10000435@JSBC
 http://112.86.202.37:8112/JSBC_iptv/C10000436@JSBC
 #EXTINF:-1 group-title="4K频道" tvg-name="深圳卫视4K",深圳卫视
 http://112.86.202.37:8112/JSBC_iptv/C10000438@JSBC
-#EXTINF:-1 group-title="4K频道" tvg-name="江苏卫视4K",江苏卫视
+#EXTINF:-1 group-title="4K频道" tvg-name="江苏卫视",江苏卫视4K
 http://112.86.202.37:8112/JSBC_iptv/C10000455@JSBC
 #EXTINF:-1 group-title="4K频道" tvg-name="浙江卫视4K",浙江卫视
 http://112.86.202.37:8112/JSBC_iptv/C10000457@JSBC
