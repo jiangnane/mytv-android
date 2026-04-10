@@ -3,6 +3,9 @@ package top.yogiczy.mytv.ui.screens.leanback.panel.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,9 +17,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.tv.foundation.lazy.list.TvLazyRow
-import androidx.tv.foundation.lazy.list.items
-import androidx.tv.foundation.lazy.list.rememberTvLazyListState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import top.yogiczy.mytv.data.entities.Epg
 import top.yogiczy.mytv.data.entities.Epg.Companion.currentProgrammes
@@ -41,8 +41,13 @@ fun LeanbackPanelIptvList(
     onUserAction: () -> Unit = {},
 ) {
     val iptvList = iptvListProvider()
+    val currentIptv = currentIptvProvider()
 
-    val listState = rememberTvLazyListState(max(0, iptvList.indexOf(currentIptvProvider()) - 2))
+    val initialIndex = max(0, iptvList.indexOf(currentIptv) - 2)
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = initialIndex
+    )
+
     val childPadding = rememberLeanbackChildPadding()
 
     var hasFocused by rememberSaveable { mutableStateOf(false) }
@@ -53,10 +58,17 @@ fun LeanbackPanelIptvList(
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }
             .distinctUntilChanged()
-            .collect { _ -> onUserAction() }
+            .collect { onUserAction() }
     }
 
-    TvLazyRow(
+    LaunchedEffect(iptvList, currentIptv) {
+        val index = max(0, iptvList.indexOf(currentIptv) - 2)
+        if (iptvList.isNotEmpty()) {
+            listState.scrollToItem(index)
+        }
+    }
+
+    LazyRow(
         state = listState,
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -79,7 +91,7 @@ fun LeanbackPanelIptvList(
                     currentShowEpgIptv = iptv
                     showEpgDialog = true
                 },
-                initialFocusedProvider = { iptv == currentIptvProvider() && !hasFocused },
+                initialFocusedProvider = { iptv == currentIptv && !hasFocused },
                 onHasFocused = { hasFocused = true },
             )
         }
@@ -94,16 +106,16 @@ fun LeanbackPanelIptvList(
                 epg.channel == currentShowEpgIptv.channelName
             } ?: Epg()
         },
-        modifier = Modifier
-            .handleLeanbackKeyEvents(
-                onLeft = {
-                    currentShowEpgIptv = iptvList[max(0, iptvList.indexOf(currentShowEpgIptv) - 1)]
-                },
-                onRight = {
-                    currentShowEpgIptv =
-                        iptvList[min(iptvList.size - 1, iptvList.indexOf(currentShowEpgIptv) + 1)]
-                },
-            ),
+        modifier = Modifier.handleLeanbackKeyEvents(
+            onLeft = {
+                currentShowEpgIptv =
+                    iptvList[max(0, iptvList.indexOf(currentShowEpgIptv) - 1)]
+            },
+            onRight = {
+                currentShowEpgIptv =
+                    iptvList[min(iptvList.size - 1, iptvList.indexOf(currentShowEpgIptv) + 1)]
+            },
+        ),
         onUserAction = onUserAction,
     )
 }

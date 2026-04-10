@@ -16,14 +16,14 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "top.yogiczy.mytv"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "cn.nasyes.mytv"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = 23
+        targetSdk = 36
         versionCode = 1
-        versionName = "1.4.4"
+        versionName = "1.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

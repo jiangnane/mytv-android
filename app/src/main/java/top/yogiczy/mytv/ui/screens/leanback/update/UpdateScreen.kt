@@ -37,7 +37,7 @@ fun LeanbackUpdateScreen(
 
     LaunchedEffect(Unit) {
         delay(3000)
-        updateViewModel.checkUpdate(packageInfo.versionName)
+        updateViewModel.checkUpdate(packageInfo.versionName.toString())
 
         val latestRelease = updateViewModel.latestRelease
         if (

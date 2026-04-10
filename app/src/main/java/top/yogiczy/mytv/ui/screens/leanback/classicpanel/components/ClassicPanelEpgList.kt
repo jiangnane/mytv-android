@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -34,10 +37,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.tv.foundation.ExperimentalTvFoundationApi
-import androidx.tv.foundation.lazy.list.TvLazyColumn
-import androidx.tv.foundation.lazy.list.TvLazyListState
-import androidx.tv.foundation.lazy.list.items
 import androidx.tv.material3.ListItemDefaults
 import kotlinx.coroutines.flow.distinctUntilChanged
 import top.yogiczy.mytv.data.entities.Epg
@@ -50,7 +49,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.max
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalTvFoundationApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun LeanbackClassicPanelEpgList(
     modifier: Modifier = Modifier,
@@ -65,38 +64,58 @@ fun LeanbackClassicPanelEpgList(
         val programmesGroup = remember(epg) {
             epg.programmes.groupBy { dateFormat.format(it.startAt) }
         }
-        var currentDay by remember(programmesGroup) { mutableStateOf(dateFormat.format(System.currentTimeMillis())) }
+        var currentDay by remember(programmesGroup) {
+            mutableStateOf(dateFormat.format(System.currentTimeMillis()))
+        }
         val programmes = remember(currentDay, programmesGroup) {
             programmesGroup.getOrElse(currentDay) { emptyList() }
         }
 
-        val programmesListState = remember(programmes) {
-            TvLazyListState(max(0, programmes.indexOfFirst { it.isLive() } - 2))
+        val programmesInitialIndex = max(0, programmes.indexOfFirst { it.isLive() } - 2)
+        val programmesListState = rememberLazyListState(
+            initialFirstVisibleItemIndex = programmesInitialIndex
+        )
+
+        val daysInitialIndex = max(0, programmesGroup.keys.indexOf(currentDay) - 2)
+        val daysListState = rememberLazyListState(
+            initialFirstVisibleItemIndex = daysInitialIndex
+        )
+
+        LaunchedEffect(programmes, currentDay) {
+            val index = max(0, programmes.indexOfFirst { it.isLive() } - 2)
+            if (programmes.isNotEmpty()) {
+                programmesListState.scrollToItem(index)
+            }
         }
-        val daysListState = remember(programmesGroup) {
-            TvLazyListState(max(0, programmesGroup.keys.indexOf(currentDay) - 2))
+
+        LaunchedEffect(programmesGroup, currentDay) {
+            val index = max(0, programmesGroup.keys.indexOf(currentDay) - 2)
+            if (programmesGroup.isNotEmpty() && index >= 0) {
+                daysListState.scrollToItem(index)
+            }
         }
 
         LaunchedEffect(programmesListState) {
             snapshotFlow { programmesListState.isScrollInProgress }
                 .distinctUntilChanged()
-                .collect { _ -> onUserAction() }
+                .collect { onUserAction() }
         }
+
         LaunchedEffect(daysListState) {
             snapshotFlow { daysListState.isScrollInProgress }
                 .distinctUntilChanged()
-                .collect { _ -> onUserAction() }
+                .collect { onUserAction() }
         }
 
         Row {
-            TvLazyColumn(
+            LazyColumn(
                 state = programmesListState,
                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = modifier
                     .fillMaxHeight()
                     .width(240.dp)
-                    .background(MaterialTheme.colorScheme.background.copy(0.7f))
+                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.7f))
                     .focusProperties {
                         exit = {
                             if (it == FocusDirection.Left) exitFocusRequesterProvider()
@@ -112,19 +131,18 @@ fun LeanbackClassicPanelEpgList(
             }
 
             if (programmesGroup.size > 1) {
-                TvLazyColumn(
+                LazyColumn(
                     state = daysListState,
                     contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = modifier
                         .fillMaxHeight()
                         .width(100.dp)
-                        .background(MaterialTheme.colorScheme.background.copy(0.7f))
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.7f))
                 ) {
-
-                    items(programmesGroup.keys.toList()) {
+                    items(programmesGroup.keys.toList()) { day ->
                         LeanbackClassicPanelEpgDayItem(
-                            dayProvider = { it },
+                            dayProvider = { day },
                             currentDayProvider = { currentDay },
                             onChangeCurrentDay = { currentDay = it },
                         )
@@ -163,9 +181,7 @@ private fun LeanbackClassicPanelEpgItem(
                 ),
             colors = ListItemDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.onBackground,
-                selectedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                    alpha = 0.5f
-                ),
+                selectedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             ),
             selected = programme.isLive(),
             onClick = { },
@@ -198,18 +214,19 @@ private fun LeanbackClassicPanelEpgDayItem(
     modifier: Modifier = Modifier,
     dayProvider: () -> String = { "" },
     currentDayProvider: () -> String = { "" },
-    onChangeCurrentDay: () -> Unit = {},
+    onChangeCurrentDay: (String) -> Unit = {},
 ) {
     val day = dayProvider()
 
     val dateFormat = SimpleDateFormat("E MM-dd", Locale.getDefault())
     val today = dateFormat.format(System.currentTimeMillis())
     val tomorrow = dateFormat.format(System.currentTimeMillis() + 24 * 3600 * 1000)
-    val dayAfterTomorrow =
-        dateFormat.format(System.currentTimeMillis() + 48 * 3600 * 1000)
+    val dayAfterTomorrow = dateFormat.format(System.currentTimeMillis() + 48 * 3600 * 1000)
 
     val focusRequester = remember { FocusRequester() }
-    val isSelected by remember(currentDayProvider()) { derivedStateOf { day == currentDayProvider() } }
+    val isSelected by remember(currentDayProvider()) {
+        derivedStateOf { day == currentDayProvider() }
+    }
     var isFocused by remember { mutableStateOf(false) }
 
     CompositionLocalProvider(
@@ -224,18 +241,16 @@ private fun LeanbackClassicPanelEpgDayItem(
                 }
                 .handleLeanbackKeyEvents(
                     onSelect = {
-                        if (isFocused) onChangeCurrentDay()
+                        if (isFocused) onChangeCurrentDay(day)
                         else focusRequester.requestFocus()
                     }
                 ),
             colors = ListItemDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.onBackground,
-                selectedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                    alpha = 0.5f
-                ),
+                selectedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             ),
             selected = isSelected,
-            onClick = {},
+            onClick = { },
             headlineContent = {
                 Column {
                     val key = day.split(" ")
@@ -258,28 +273,6 @@ private fun LeanbackClassicPanelEpgDayItem(
                     )
                 }
             },
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun LeanbackClassicPanelEpgListPreview() {
-    LeanbackTheme {
-        LeanbackClassicPanelEpgList(
-            epgProvider = {
-                Epg(
-                    channel = "CCTV1", programmes = EpgProgrammeList(
-                        List(200) { index ->
-                            EpgProgramme(
-                                title = "节目$index",
-                                startAt = System.currentTimeMillis() - 3600 * 1000 * 24 * 5 + index * 3600 * 1000,
-                                endAt = System.currentTimeMillis() - 3600 * 1000 * 24 * 5 + index * 3600 * 1000 + 3600 * 1000
-                            )
-                        }
-                    )
-                )
-            }
         )
     }
 }

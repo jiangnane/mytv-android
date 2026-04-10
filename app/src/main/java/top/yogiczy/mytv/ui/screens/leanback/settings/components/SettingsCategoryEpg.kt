@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AlertDialog
@@ -25,9 +28,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.tv.foundation.lazy.list.TvLazyColumn
-import androidx.tv.foundation.lazy.list.TvLazyListState
-import androidx.tv.foundation.lazy.list.items
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -50,7 +50,7 @@ fun LeanbackSettingsCategoryEpg(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    TvLazyColumn(
+    LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(vertical = 10.dp),
@@ -153,8 +153,8 @@ private fun LeanbackSettingsEpgSourceHistoryDialog(
             text = {
                 var hasFocused by remember { mutableStateOf(false) }
 
-                TvLazyColumn(
-                    state = TvLazyListState(
+                LazyColumn(
+                    state = LazyListState(
                         max(0, epgXmlUrlHistory.indexOf(currentEpgXmlUrl) - 2),
                     ),
                     contentPadding = PaddingValues(vertical = 4.dp),
