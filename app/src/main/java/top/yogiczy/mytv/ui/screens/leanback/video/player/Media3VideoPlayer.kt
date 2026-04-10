@@ -217,6 +217,9 @@ class LeanbackMedia3VideoPlayer(
     @UnstableApi
     override fun prepare(url: String) {
         contentTypeAttempts.clear()
+        // 解决切换不同源的频道时会出现花屏、绿屏的情况 20260410
+        videoPlayer.stop()
+        videoPlayer.clearMediaItems()
         prepare(Uri.parse(url))
     }
 
